@@ -1,49 +1,46 @@
-from threading import Lock
-from typing import Any
-import socket
-
-
-messages = {
-    "power_on": 'power "on"\r\n',
-    "power_off": 'power "off"\r\n'
-}
+import telnetlib
 
 
 class ADCPHelper:
-    _instance: Any = None
-    _lock: Lock = Lock()
-    ip: str = None
-    port: int = None
-    connected: bool = False
-    socket: socket = None
+    def __init__(self, host: str, port=53595, timeout=5):
+        self.host: str = host
+        self.port: int = port
+        self.timeout: int = timeout
+        self.tn: telnetlib.Telnet | None = None
 
-    def __new__(cls) -> Any:
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-        return cls._instance
+    def connect(self):
+        self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
+        self.tn.read_until(b"NOKEY\r\n", self.timeout).decode("ascii").strip()
+        print(f"Connected to projector at {self.host}:{self.port}")
 
-    def init(self, ip: str, port: int) -> None:
-        self.ip = ip
-        self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def disconnect(self):
+        if not self.tn:
+            raise Exception("Not connected to projector")
+        if self.tn:
+            self.tn.close()
+            print("Disconnected from projector")
+            self.tn = None
 
-    def send(self, message: str):
-        try:
-            self.socket.connect((self.ip, self.port))
-            self.socket.sendall(message.encode())
-            response = self.socket.recv(1024)
-            response_parsed = response.decode()
-        except Exception as e:
-            print(f"An error occurred: {e}")
-        finally:
-            self.socket.close()
+    def send_command(self, command: str):
+        if not self.tn:
+            raise Exception("Not connected to projector")
+        self.tn.write(command.encode("ascii") + b"\r\n")
+        response = self.tn.read_until(b"\r\n", self.timeout).decode("ascii").strip()
+        return response
+
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.disconnect()
 
 
-# Usage
-singleton1 = ADCPHelper()
-singleton2 = ADCPHelper()
-
-singleton1.init("192.168.1.93", 53595)
-singleton1.send(messages["power_off"])
+# Example usage:
+if __name__ == "__main__":
+    projector_ip = "192.168.1.93"
+    try:
+        with ADCPHelper(projector_ip) as projector:
+            print(projector.send_command('input "hdmi1"'))
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
