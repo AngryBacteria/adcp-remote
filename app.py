@@ -1,32 +1,34 @@
 import streamlit as st
-
 from ADCPHelper import ADCPHelper
 
 
-def setup_adcp_client() -> ADCPHelper:
+def setup_adcp_client() -> ADCPHelper | None:
     try:
         if not st.session_state.get("adcp"):
             adcp_helper = ADCPHelper("192.168.1.93", timeout=1)
             st.session_state["adcp"] = adcp_helper
             adcp_helper.connect()
-            st.toast("Connected to projector")
+            st.toast("Successfully connected to the projector.")
             return adcp_helper
         else:
             return st.session_state["adcp"]
     except Exception as error:
-        st.toast(f"Could not connect to projector {error}")
+        st.toast(f"Failed to connect to the projector. Error: {error}")
+        return None
 
 
 def send_command_wrapper(command):
     projector = setup_adcp_client()
     if projector:
         try:
-            projector.send_command(command)
-            st.toast(f"Command sent successfully: {command}")
+            result = projector.send_command(command)
+            st.toast(f"Command '{command}' sent successfully. Response: {result}")
         except Exception as e:
-            st.toast(f"Failed to send command '{command}': {str(e)}")
+            st.toast(f"Failed to send command '{command}'. Error: {str(e)}")
     else:
-        st.toast("No active projector, cannot send command")
+        st.toast(
+            "No active projector connection. Please check the connection and try again."
+        )
 
 
 st.title("Sony ADCP Remote")
@@ -55,6 +57,8 @@ def execute_custom_command():
     ):
         result = send_command_wrapper(st.session_state["custom_command"])
         st.session_state["command_result"] = result
+    else:
+        st.toast("Please enter a valid custom command (at least 3 characters long).")
 
 
 # Buttons for power and blank

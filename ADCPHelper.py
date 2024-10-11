@@ -7,7 +7,7 @@ class ADCPHelper:
         self.port: int = port
         self.timeout = timeout
         self.tn: telnetlib.Telnet | None = None
-        print("ADCP-Client initialized")
+        print(f"ADCP-Client initialized for {host}:{port}")
 
     def connect(self):
         self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
@@ -15,38 +15,32 @@ class ADCPHelper:
             self.tn.read_until(b"NOKEY\r\n", self.timeout).decode("ascii").strip()
         )
         if response == "NOKEY":
-            print(f"Connected to projector [{self.host}:{self.port}]")
+            print(f"Successfully connected to projector [{self.host}:{self.port}]")
         else:
             raise Exception(
-                f"Connection to projector [{self.host}:{self.port}] could not be established: {response}"
+                f"Connection to projector [{self.host}:{self.port}] failed. Response: {response}"
             )
 
     def disconnect(self):
         if not self.tn:
-            raise Exception(
-                f"Cannot disconnect from projector [${self.host}:{self.port}] if not connected"
+            print(
+                f"No active connection to projector [{self.host}:{self.port}], cannot disconnect."
             )
-        if self.tn:
-            self.tn.close()
-            print(f"Disconnected from projector [${self.host}:{self.port}]")
-            self.tn = None
+            return
+        self.tn.close()
+        print(f"Disconnected from projector [{self.host}:{self.port}]")
+        self.tn = None
 
     def send_command(self, command: str):
         print(f"Sending command to projector [{self.host}:{self.port}]: {command}")
         if not self.tn:
-            raise Exception("Not connected to projector, cannot send command")
+            raise Exception(
+                "Not connected to projector. Please connect before sending commands."
+            )
         self.tn.write(command.encode("ascii") + b"\r\n")
         response = self.tn.read_until(b"\r\n", self.timeout).decode("ascii").strip()
         if "err_" not in response:
+            print(f"Command '{command}' executed successfully. Response: {response}")
             return response
         else:
-            raise Exception(
-                "ADCP Message could not be transmitted, received error: ", response
-            )
-
-
-if __name__ == "__main__":
-    adcp_helper = ADCPHelper("192.168.1.93", timeout=5)
-    adcp_helper.connect()
-    print(adcp_helper.send_command('input "hdmi2"'))
-    adcp_helper.disconnect()
+            raise Exception(f"Command '{command}' failed. Error: {response}")
