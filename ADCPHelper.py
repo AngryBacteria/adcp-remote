@@ -30,11 +30,13 @@ class ADCPHelper:
             self.tn = None
 
     def send_command(self, command: str):
+        print(f"Sending command to projector [{self.host}:{self.port}]: {command}")
+
         if not self.tn:
             raise Exception("Not connected to projector")
         self.tn.write(command.encode("ascii") + b"\r\n")
         response = self.tn.read_until(b"\r\n", self.timeout).decode("ascii").strip()
-        if response.lower() == "ok":
+        if "err_" not in response:
             return response
         else:
             raise Exception(
