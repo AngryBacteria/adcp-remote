@@ -10,15 +10,18 @@ class ADCPHelper:
 
     def connect(self):
         self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
-        self.tn.read_until(b"NOKEY\r\n", self.timeout).decode("ascii").strip()
-        print(f"Connected to projector at {self.host}:{self.port}")
+        response = self.tn.read_until(b"NOKEY\r\n", self.timeout).decode("ascii").strip()
+        if response == "NOKEY":
+            print(f"Connected to projector [{self.host}:{self.port}]")
+        else:
+            raise Exception(f"Connection to projector [{self.host}:{self.port}] could not be established: {response}")
 
     def disconnect(self):
         if not self.tn:
-            raise Exception("Not connected to projector")
+            raise Exception(f"Not connected to projector [${self.host}:{self.port}]")
         if self.tn:
             self.tn.close()
-            print("Disconnected from projector")
+            print(f"Disconnected from projector [${self.host}:{self.port}]")
             self.tn = None
 
     def send_command(self, command: str):
@@ -26,7 +29,10 @@ class ADCPHelper:
             raise Exception("Not connected to projector")
         self.tn.write(command.encode("ascii") + b"\r\n")
         response = self.tn.read_until(b"\r\n", self.timeout).decode("ascii").strip()
-        return response
+        if response.lower() == "ok":
+            return response
+        else:
+            raise Exception("ADCP Message could not be transmitted, received error: ", response)
 
     def __enter__(self):
         self.connect()
