@@ -47,3 +47,10 @@ class ADCPHelper:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+
+
+if __name__ == "__main__":
+    adcp_helper = ADCPHelper("192.168.1.93", timeout=5)
+    adcp_helper.connect()
+    print(adcp_helper.send_command('input "hdmi2"'))
+    adcp_helper.disconnect()
