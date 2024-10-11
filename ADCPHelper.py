@@ -23,7 +23,9 @@ class ADCPHelper:
 
     def disconnect(self):
         if not self.tn:
-            raise Exception(f"Not connected to projector [${self.host}:{self.port}]")
+            raise Exception(
+                f"Cannot disconnect from projector [${self.host}:{self.port}] if not connected"
+            )
         if self.tn:
             self.tn.close()
             print(f"Disconnected from projector [${self.host}:{self.port}]")
@@ -31,9 +33,8 @@ class ADCPHelper:
 
     def send_command(self, command: str):
         print(f"Sending command to projector [{self.host}:{self.port}]: {command}")
-
         if not self.tn:
-            raise Exception("Not connected to projector")
+            raise Exception("Not connected to projector, cannot send command")
         self.tn.write(command.encode("ascii") + b"\r\n")
         response = self.tn.read_until(b"\r\n", self.timeout).decode("ascii").strip()
         if "err_" not in response:
@@ -42,13 +43,6 @@ class ADCPHelper:
             raise Exception(
                 "ADCP Message could not be transmitted, received error: ", response
             )
-
-    def __enter__(self):
-        self.connect()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
 
 
 if __name__ == "__main__":
