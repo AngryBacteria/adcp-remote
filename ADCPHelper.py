@@ -2,19 +2,24 @@ import telnetlib
 
 
 class ADCPHelper:
-    def __init__(self, host: str, port=53595, timeout=5):
+    def __init__(self, host: str, port=53595, timeout: int | float = 5):
         self.host: str = host
         self.port: int = port
-        self.timeout: int = timeout
+        self.timeout = timeout
         self.tn: telnetlib.Telnet | None = None
+        print("ADCP-Client initialized")
 
     def connect(self):
         self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
-        response = self.tn.read_until(b"NOKEY\r\n", self.timeout).decode("ascii").strip()
+        response = (
+            self.tn.read_until(b"NOKEY\r\n", self.timeout).decode("ascii").strip()
+        )
         if response == "NOKEY":
             print(f"Connected to projector [{self.host}:{self.port}]")
         else:
-            raise Exception(f"Connection to projector [{self.host}:{self.port}] could not be established: {response}")
+            raise Exception(
+                f"Connection to projector [{self.host}:{self.port}] could not be established: {response}"
+            )
 
     def disconnect(self):
         if not self.tn:
@@ -32,7 +37,9 @@ class ADCPHelper:
         if response.lower() == "ok":
             return response
         else:
-            raise Exception("ADCP Message could not be transmitted, received error: ", response)
+            raise Exception(
+                "ADCP Message could not be transmitted, received error: ", response
+            )
 
     def __enter__(self):
         self.connect()
@@ -40,13 +47,3 @@ class ADCPHelper:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
-
-
-# Example usage:
-if __name__ == "__main__":
-    projector_ip = "192.168.1.93"
-    try:
-        with ADCPHelper(projector_ip) as projector:
-            print(projector.send_command('input "hdmi1"'))
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
