@@ -1,11 +1,13 @@
 import streamlit as st
 from ADCPHelper import ADCPHelper
 
+st.set_page_config(page_title="Sony ADCP Remote")
+
 
 def setup_adcp_client() -> ADCPHelper | None:
     try:
         if not st.session_state.get("adcp"):
-            adcp_helper = ADCPHelper("192.168.1.93", timeout=1)
+            adcp_helper = ADCPHelper()
             st.session_state["adcp"] = adcp_helper
             adcp_helper.connect()
             st.toast("Successfully connected to the projector.")

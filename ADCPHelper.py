@@ -1,13 +1,14 @@
+import os
 import telnetlib
 
 
 class ADCPHelper:
-    def __init__(self, host: str, port=53595, timeout: int | float = 5):
-        self.host: str = host
-        self.port: int = port
-        self.timeout = timeout
+    def __init__(self):
+        self.host: str = os.environ.get("ADCP_HOST", "192.168.1.93")
+        self.port: int = int(os.environ.get("ADCP_PORT", "53595"))
+        self.timeout = float(os.environ.get("ADCP_TIMEOUT", "5.0"))
         self.tn: telnetlib.Telnet | None = None
-        print(f"ADCP-Client initialized for {host}:{port}")
+        print(f"ADCP-Client initialized for {self.host}:{self.port}")
 
     def connect(self):
         self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
